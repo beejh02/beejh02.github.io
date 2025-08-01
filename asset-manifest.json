@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/beejh02/beejh02.github.io/static/css/main.f855e6bc.css",
+    "main.js": "/beejh02/beejh02.github.io/static/js/main.c046ea30.js",
+    "static/js/453.d32da825.chunk.js": "/beejh02/beejh02.github.io/static/js/453.d32da825.chunk.js",
+    "static/media/logo.svg": "/beejh02/beejh02.github.io/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/beejh02/beejh02.github.io/index.html",
+    "main.f855e6bc.css.map": "/beejh02/beejh02.github.io/static/css/main.f855e6bc.css.map",
+    "main.c046ea30.js.map": "/beejh02/beejh02.github.io/static/js/main.c046ea30.js.map",
+    "453.d32da825.chunk.js.map": "/beejh02/beejh02.github.io/static/js/453.d32da825.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.c046ea30.js"
+  ]
+}
