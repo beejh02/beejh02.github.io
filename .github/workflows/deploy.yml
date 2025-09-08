@@ -2,7 +2,7 @@ name: Deploy Vite React to GH Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -26,11 +26,19 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install
-        run: npm ci
+      - name: Install (use ci if lockfile exists, otherwise install)
+        run: |
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+            echo "Lockfile found → npm ci"
+            npm ci
+          else
+            echo "No lockfile → npm install"
+            npm install
+          fi
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
