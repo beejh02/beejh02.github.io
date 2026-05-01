@@ -1,19 +1,82 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+:root {
+  color-scheme: light;
+  font-family: Inter, Pretendard, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --bg: #f8fbff;
+  --bg-soft: #eef2ff;
+  --card: rgba(255, 255, 255, 0.72);
+  --card-strong: rgba(255, 255, 255, 0.92);
+  --line: rgba(99, 102, 241, 0.14);
+  --text: #30334d;
+  --text-strong: #20223a;
+  --text-muted: #667085;
+  --accent: #4f46e5;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --accent-2: #38bdf8;
+  --pink: #ec4899;
+  --shadow: 0 24px 70px rgba(79, 70, 229, 0.11);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 16%, rgba(199, 210, 254, 0.85), transparent 28rem),
+    radial-gradient(circle at 88% 22%, rgba(186, 230, 253, 0.78), transparent 25rem),
+    radial-gradient(circle at 48% 100%, rgba(252, 231, 243, 0.7), transparent 28rem),
+    linear-gradient(135deg, #f8fbff, #eef2ff 52%, #fdf2f8);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  right: -120px;
+  top: 90px;
+  z-index: -1;
+  width: 320px;
+  height: 320px;
+  border-radius: 999px;
+  background: rgba(191, 219, 254, 0.56);
+  filter: blur(10px);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  color: #ffffff;
+  background: var(--accent);
 }

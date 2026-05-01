@@ -1,15 +1,17 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import './NotFound.css';
 
-const NotFound = () => (
-  <div className="not-found-container">
-    <h1 className="not-found-title">404</h1>
-    <p className="not-found-text">페이지를 찾을 수 없습니다.</p>
-    <Link to="/" className="home-link">
-      홈으로 돌아가기
-    </Link>
-  </div>
-);
+function NotFound() {
+  return (
+    <section className="page not-found-page">
+      <div className="not-found-card">
+        <span>404</span>
+        <h1>페이지를 찾을 수 없습니다</h1>
+        <p>주소가 잘못되었거나 아직 준비되지 않은 페이지입니다.</p>
+        <Link className="button" to="/">홈으로 돌아가기</Link>
+      </div>
+    </section>
+  );
+}
 
 export default NotFound;

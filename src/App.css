@@ -1,35 +1,227 @@
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-shell {
+  min-height: 100vh;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.page {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  animation: fadeUp 0.5s ease both;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.page-hero {
+  padding: 74px 0 38px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 6px rgba(79, 70, 229, 0.1);
+}
+
+.page-title {
+  max-width: 840px;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(2.65rem, 6vw, 5.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.075em;
+}
+
+.page-title .gradient-text,
+.gradient-text {
+  color: transparent;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6, var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.page-description {
+  max-width: 760px;
+  margin: 22px 0 0;
+  color: var(--text-muted);
+  font-size: clamp(1rem, 2vw, 1.16rem);
+  line-height: 1.8;
+}
+
+.section {
+  padding: 34px 0;
+}
+
+.section-title {
+  margin: 0 0 18px;
+  color: var(--text-strong);
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  letter-spacing: -0.045em;
+}
+
+.section-description {
+  max-width: 720px;
+  margin: -8px 0 24px;
+  color: var(--text-muted);
+  line-height: 1.72;
+}
+
+.grid {
+  display: grid;
+  gap: 18px;
+}
+
+.grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .card {
-  padding: 2em;
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px);
 }
 
-.read-the-docs {
-  color: #888;
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 34%);
+}
+
+.card > * {
+  position: relative;
+}
+
+.card h3 {
+  margin: 0 0 10px;
+  color: var(--text-strong);
+  font-size: 1.24rem;
+  letter-spacing: -0.04em;
+}
+
+.card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.72;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 35px;
+  padding: 0 13px;
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #4338ca;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--accent);
+  box-shadow: 0 16px 36px rgba(79, 70, 229, 0.18);
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 44px rgba(79, 70, 229, 0.24);
+}
+
+.button.secondary {
+  color: #3730a3;
+  border-color: rgba(79, 70, 229, 0.16);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+}
+
+.soft-panel {
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(24px);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 840px) {
+  .page {
+    width: min(100% - 28px, 1120px);
+  }
+
+  .page-hero {
+    padding-top: 48px;
+  }
+
+  .grid.two,
+  .grid.three {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 22px;
+    border-radius: 24px;
+  }
 }

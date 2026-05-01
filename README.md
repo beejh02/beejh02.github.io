@@ -1,12 +1,34 @@
-# React + Vite
+# beejh02.github.io
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+이준혁 개인 프로필 웹사이트입니다.
 
-Currently, two official plugins are available:
+## 사용 기술
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React
+- Vite
+- React Router
+- CSS
+- GitHub Pages
 
-## Expanding the ESLint configuration
+## 실행
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+## 빌드
+
+```bash
+npm run build
+```
+
+## 내용 수정 위치
+
+프로필에 들어가는 이름, 소개, 기술 키워드, 연락처는 아래 파일에서 수정합니다.
+
+```txt
+src/data/profile.js
+```
+
+대표 프로젝트는 나중에 준비되면 `src/data/profile.js`의 프로젝트 관련 데이터를 실제 내용으로 교체하면 됩니다.
