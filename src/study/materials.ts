@@ -3,7 +3,7 @@ import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three'
 type Color = readonly [number, number, number]
 
 export interface StudyTextures {
-  wood: CanvasTexture
+  desktop: CanvasTexture
   paper: CanvasTexture
   cloth: CanvasTexture
   edges: CanvasTexture
@@ -62,48 +62,32 @@ function setPixel(data: Uint8ClampedArray, index: number, color: Color, light: n
   data[index + 3] = 255
 }
 
-function paintWood(context: CanvasRenderingContext2D, width: number, height: number) {
+function paintDesktop(context: CanvasRenderingContext2D, width: number, height: number) {
   const pixels = context.createImageData(width, height)
   const sample = random(93601)
-  const base: Color = [210, 188, 152]
+  const base: Color = [72, 47, 35]
 
   for (let y = 0; y < height; y += 1) {
     const v = y / height
     for (let x = 0; x < width; x += 1) {
       const u = x / width
-      // Broad waves and occasional gentle arches keep the oak grain readable
-      // after the tabletop is lit and viewed at a shallow angle.
-      const broad = noise(u * 3.8, v * 4.2, 881)
-      const arch = Math.exp(-(((u - 0.26) / 0.3) ** 2 + ((v - 0.49) / 0.14) ** 2)) * 0.036
-        - Math.exp(-(((u - 0.82) / 0.36) ** 2 + ((v - 0.86) / 0.11) ** 2)) * 0.026
-      const bend = noise(u * 4.1, v * 3.4, 219) * 0.064
-        + noise(u * 10.5, v * 7.5, 725) * 0.012 + arch
-      const growth = (v + bend) * 94
-      const ring = Math.pow(0.5 + 0.5 * Math.sin(growth * Math.PI * 2), 8)
-      const fine = noise(u * 33, (v + bend) * 700, 441)
-      const pores = noise(u * 54, v * 410, 914)
-      const light = (broad - 0.5) * 12 - ring * (8 + broad * 7)
-        + (fine - 0.5) * 4 + (pores - 0.5) * 2 + (sample() - 0.5) * 1.2
+      // Blend opposite edges to keep the walnut continuous across the table.
+      const broad = (noise(u * 5, v * 6, 881) * (1 - u)
+        + noise((u - 1) * 5, v * 6, 881) * u) * (1 - v)
+        + (noise(u * 5, (v - 1) * 6, 881) * (1 - u)
+        + noise((u - 1) * 5, (v - 1) * 6, 881) * u) * v
+      const bend = Math.sin(u * Math.PI * 2) * 0.014
+        + Math.sin(u * Math.PI * 4 + Math.sin(v * Math.PI * 2)) * 0.006
+      const growth = (v + bend) * 76
+      const grain = Math.pow(0.5 + Math.sin(growth * Math.PI * 2) * 0.5, 10)
+      const fibre = noise(x / 110, (v + bend) * 650, 441)
+      const light = (broad - 0.5) * 17 - grain * (2 + broad * 4)
+        + (fibre - 0.5) * 4 + (sample() - 0.5) * 1.5
       setPixel(pixels.data, (y * width + x) * 4, base, light)
     }
   }
   context.putImageData(pixels, 0, 0)
 
-  // Two quiet joins suggest broad boards rather than a patterned wallpaper.
-  for (const position of [0.31, 0.72]) {
-    const y = Math.round(height * position) + 0.5
-    context.strokeStyle = 'rgba(125, 103, 69, 0.13)'
-    context.lineWidth = 1
-    context.beginPath()
-    context.moveTo(0, y)
-    context.lineTo(width, y)
-    context.stroke()
-    context.strokeStyle = 'rgba(255, 249, 222, 0.28)'
-    context.beginPath()
-    context.moveTo(0, y + 1)
-    context.lineTo(width, y + 1)
-    context.stroke()
-  }
 }
 
 function paintPaper(context: CanvasRenderingContext2D, width: number, height: number) {
@@ -158,7 +142,7 @@ function paintEdges(context: CanvasRenderingContext2D, width: number, height: nu
 /** Each returned texture is owned by the caller and should be disposed on teardown. */
 export function createStudyTextures(): StudyTextures {
   return {
-    wood: makeTexture(1536, 1024, paintWood),
+    desktop: makeTexture(1536, 1024, paintDesktop),
     paper: makeTexture(512, 512, paintPaper),
     cloth: makeTexture(512, 512, paintCloth),
     edges: makeTexture(512, 256, paintEdges),

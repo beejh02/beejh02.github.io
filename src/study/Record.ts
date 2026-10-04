@@ -2,6 +2,9 @@ import * as THREE from 'three'
 
 export interface VinylRecord {
   group: THREE.Group
+  body: THREE.Mesh
+  surface: THREE.Group
+  setHover: (amount: number) => void
   dispose: () => void
 }
 
@@ -10,6 +13,8 @@ const radius = 450
 /** A lightweight tabletop prop; every GPU resource belongs to this instance. */
 export function createVinylRecord(): VinylRecord {
   const group = new THREE.Group()
+  const surface = new THREE.Group()
+  group.add(surface)
   const textures: THREE.CanvasTexture[] = []
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>[] = []
 
@@ -81,7 +86,7 @@ export function createVinylRecord(): VinylRecord {
   function add(geometry: THREE.BufferGeometry, material: THREE.Material | THREE.Material[], z: number) {
     const mesh = new THREE.Mesh(geometry, material)
     mesh.position.z = z
-    group.add(mesh)
+    surface.add(mesh)
     meshes.push(mesh)
     return mesh
   }
@@ -117,16 +122,33 @@ export function createVinylRecord(): VinylRecord {
     context.fillStyle = gradient
     context.fillRect(0, 0, 128, 128)
   })
+  const contactMaterial = new THREE.MeshBasicMaterial({ map: shadow, transparent: true, depthWrite: false, toneMapped: false })
   const contact = add(
     new THREE.PlaneGeometry(1010, 1010),
-    new THREE.MeshBasicMaterial({ map: shadow, transparent: true, depthWrite: false, toneMapped: false }),
+    contactMaterial,
     0.3,
   )
   contact.position.x = 10
   contact.position.y = -12
+  group.add(contact)
+  const litMaterials = meshes.flatMap(mesh => Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+    .filter((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial)
+  litMaterials.forEach(material => {
+    material.emissive.set('#ffcd7b')
+    material.emissiveIntensity = 0
+  })
 
   return {
     group,
+    body,
+    surface,
+    setHover(amount) {
+      surface.position.z = amount * 40
+      litMaterials.forEach(material => { material.emissiveIntensity = amount * 0.006 })
+      contact.position.set(10 + amount * 18, -12 - amount * 22, 0.3)
+      contact.scale.setScalar(1 + amount * 0.08)
+      contactMaterial.opacity = 1 - amount * 0.35
+    },
     dispose() {
       group.removeFromParent()
       for (const mesh of meshes) {
