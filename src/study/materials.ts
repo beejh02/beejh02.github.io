@@ -1,4 +1,5 @@
-import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three'
+import type { CanvasTexture } from 'three'
+import { createCanvasTexture } from './Resources'
 
 type Color = readonly [number, number, number]
 
@@ -6,7 +7,7 @@ export interface StudyTextures {
   desktop: CanvasTexture
   paper: CanvasTexture
   cloth: CanvasTexture
-  edges: CanvasTexture
+  frontCover: CanvasTexture
 }
 
 // A fixed seed keeps the desk stable across reloads, without shipping image assets.
@@ -41,18 +42,9 @@ function makeTexture(
   height: number,
   paint: (context: CanvasRenderingContext2D, width: number, height: number) => void,
 ): CanvasTexture {
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('A 2D canvas is required to create the study materials.')
-  paint(context, width, height)
-  const texture = new CanvasTexture(canvas)
-  texture.colorSpace = SRGBColorSpace
-  texture.wrapS = RepeatWrapping
-  texture.wrapT = RepeatWrapping
-  texture.anisotropy = 8
-  return texture
+  return createCanvasTexture(width, height, paint, {
+    errorMessage: 'A 2D canvas is required to create the study materials.', repeat: true, anisotropy: 8,
+  })
 }
 
 function setPixel(data: Uint8ClampedArray, index: number, color: Color, light: number) {
@@ -121,30 +113,24 @@ function paintCloth(context: CanvasRenderingContext2D, width: number, height: nu
   context.putImageData(pixels, 0, 0)
 }
 
-function paintEdges(context: CanvasRenderingContext2D, width: number, height: number) {
-  const pixels = context.createImageData(width, height)
-  const sample = random(25199)
-  const base: Color = [233, 227, 208]
-  const layers = Array.from({ length: height }, () => sample())
-  for (let y = 0; y < height; y += 1) {
-    const layer = layers[y]
-    // Irregular strengths retain the impression of thin individual leaves.
-    const line = y % 4 === 0 ? -6 - layer * 5 : layer * 3
-    for (let x = 0; x < width; x += 1) {
-      const light = line + (noise(x / 120, y / 20, 778) - 0.5) * 2
-        + (sample() - 0.5) * 1.2
-      setPixel(pixels.data, (y * width + x) * 4, base, light)
-    }
-  }
-  context.putImageData(pixels, 0, 0)
-}
-
 /** Each returned texture is owned by the caller and should be disposed on teardown. */
 export function createStudyTextures(): StudyTextures {
+  const cloth = makeTexture(512, 512, paintCloth)
+  const frontCover = makeTexture(1024, 1448, (context, width, height) => {
+    context.drawImage(cloth.image, 0, 0, width, height)
+    context.font = '108px Georgia, "Times New Roman", serif'
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    // A subtle inset shadow gives the title the feel of foil on the cloth.
+    context.fillStyle = 'rgba(44, 53, 35, 0.45)'
+    context.fillText('Who Am I', width / 2, height * 0.34 + 2)
+    context.fillStyle = '#e7d6ac'
+    context.fillText('Who Am I', width / 2, height * 0.34)
+  })
   return {
     desktop: makeTexture(1536, 1024, paintDesktop),
     paper: makeTexture(512, 512, paintPaper),
-    cloth: makeTexture(512, 512, paintCloth),
-    edges: makeTexture(512, 256, paintEdges),
+    cloth,
+    frontCover,
   }
 }

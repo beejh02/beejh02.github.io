@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { collectMaterials, createModelResources } from './Resources'
 
 export interface Pencil {
   group: THREE.Group
@@ -14,7 +15,8 @@ export function createPencil(): Pencil {
   const body = new THREE.Group()
   group.add(body)
   const meshes: THREE.Mesh[] = []
-  const textures: THREE.CanvasTexture[] = []
+  const resources = createModelResources({ errorMessage: 'A 2D canvas is required to create the pencil.', anisotropy: 8 })
+  const { texture } = resources
   const centerHeight = 23
 
   function add(geometry: THREE.BufferGeometry, material: THREE.Material, y: number, z = centerHeight) {
@@ -27,19 +29,6 @@ export function createPencil(): Pencil {
     return mesh
   }
 
-  function texture(width: number, height: number, paint: (context: CanvasRenderingContext2D) => void) {
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('A 2D canvas is required to create the pencil.')
-    paint(context)
-    const map = new THREE.CanvasTexture(canvas)
-    map.colorSpace = THREE.SRGBColorSpace
-    map.anisotropy = 8
-    textures.push(map)
-    return map
-  }
 
   const lacquer = new THREE.MeshStandardMaterial({ color: '#d5a12d', roughness: 0.48 })
   const bodyGeometry = new THREE.CylinderGeometry(22, 22, 770, 6)
@@ -111,11 +100,7 @@ export function createPencil(): Pencil {
   contact.receiveShadow = false
   // Keep the contact shadow on the table when the pencil lifts.
   group.add(contact)
-  const materials = new Set<THREE.Material>()
-  for (const mesh of meshes) {
-    const owned = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-    owned.forEach(material => materials.add(material))
-  }
+  const materials = collectMaterials(meshes)
   const litMaterials = [...materials].filter((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial)
   litMaterials.forEach(material => {
     material.emissive.set('#ffcd7b')
@@ -135,11 +120,7 @@ export function createPencil(): Pencil {
     },
     dispose() {
       group.removeFromParent()
-      for (const mesh of meshes) {
-        mesh.geometry.dispose()
-      }
-      materials.forEach(material => material.dispose())
-      textures.forEach(map => map.dispose())
+      resources.dispose(meshes)
     },
   }
 }

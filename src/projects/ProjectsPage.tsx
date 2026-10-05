@@ -1,13 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
+import type { CSSProperties, PointerEvent } from 'react'
 import { projects } from './projects'
 import type { Project } from './projects'
-import { createWheelDrag } from './WheelDrag'
+import { loopSteps, projectIndex, useProjectWheel } from './useProjectWheel'
+import { projectStepAngle } from './wheelGeometry'
 import './projects.css'
-
-const loopSteps = projects.length * 7
-const centerStep = projects.length * 3
-const projectIndex = (step: number) => ((step % projects.length) + projects.length) % projects.length
 
 function Arrow({ diagonal = false }: { diagonal?: boolean }) {
   return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d={diagonal ? 'M6 18 18 6M6 6h12v12' : 'm10 6-6 6 6 6M4 12h16'} /></svg>
@@ -47,152 +44,24 @@ function ProjectLink({ href, children }: { href?: string; children: string }) {
 }
 
 export default function ProjectsPage({ onReturn, recordImage, entering = false }: { onReturn: () => void; recordImage?: string | null; entering?: boolean }) {
-  const onReturnRef = useRef(onReturn)
-  const enteringRef = useRef(entering)
-  const wheelDrag = useRef<ReturnType<typeof createWheelDrag> | null>(null)
-  const wheel = useRef<HTMLDivElement>(null)
-  const vinyl = useRef<HTMLDivElement>(null)
-  const [progress, setProgress] = useState(0)
-  const [reducedMotion, setReducedMotion] = useState(false)
-  const [dragging, setDragging] = useState(false)
-  const scroller = useRef<HTMLDivElement>(null)
-  const stage = useRef<HTMLDivElement>(null)
-  const header = useRef<HTMLElement>(null)
+  const { position, reducedMotion, selectedStep, selected, selectProject, wheel, vinyl, scroller, stage, header } = useProjectWheel({ onReturn, entering })
   const heading = useRef<HTMLHeadingElement>(null)
   const detailScroll = useRef<HTMLDivElement>(null)
-  const scrollOffset = useRef(-centerStep)
-  const selectedStep = Math.round(progress)
-  const selected = projectIndex(selectedStep)
+  const pointerGesture = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null)
   const active = projects[selected]
 
-  useEffect(() => { onReturnRef.current = onReturn }, [onReturn])
-  useEffect(() => {
-    enteringRef.current = entering
-    if (entering) wheelDrag.current?.cancel()
-  }, [entering])
+  function trackPointerMovement(event: PointerEvent) {
+    const gesture = pointerGesture.current
+    if (gesture?.id === event.pointerId && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) >= 6) gesture.moved = true
+  }
 
   useEffect(() => {
     if (detailScroll.current) detailScroll.current.scrollTop = 0
   }, [selected])
 
   useEffect(() => {
-    const root = document.documentElement
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const updatePreference = () => setReducedMotion(preference.matches)
-    let frame = 0
-    let releaseFrame = 0
-    let logicalPosition = 0
-    let settling: number | null = null
-    let settleTimer = 0
-    const stepHeight = () => {
-      if (!scroller.current || !stage.current) return 1
-      return (scroller.current.offsetHeight - stage.current.offsetHeight) / loopSteps
-    }
-    const scrollOrigin = () => {
-      if (!scroller.current || !header.current) return 0
-      return window.scrollY + scroller.current.getBoundingClientRect().top - header.current.offsetHeight
-    }
-    const rebase = (physicalPosition: number) => {
-      // Shift the native scroll range by whole cycles without moving the wheel.
-      root.classList.add('projects-rebasing')
-      window.scrollTo({ top: scrollOrigin() + physicalPosition * stepHeight(), behavior: 'instant' })
-      cancelAnimationFrame(releaseFrame)
-      releaseFrame = requestAnimationFrame(() => root.classList.remove('projects-rebasing'))
-    }
-    const updateProgress = () => {
-      frame = 0
-      const physicalPosition = (window.scrollY - scrollOrigin()) / stepHeight()
-      logicalPosition = physicalPosition + scrollOffset.current
-      setProgress(logicalPosition)
-      if (settling !== null && Math.abs(logicalPosition - settling) < .002) {
-        settling = null
-        root.classList.remove('projects-dragging')
-        window.clearTimeout(settleTimer)
-      }
-      const shift = physicalPosition < projects.length ? centerStep : physicalPosition > loopSteps - projects.length ? -centerStep : 0
-      if (shift) {
-        scrollOffset.current -= shift
-        rebase(physicalPosition + shift)
-      }
-    }
-    const scheduleUpdate = () => {
-      if (!frame) frame = requestAnimationFrame(updateProgress)
-    }
-    const onResize = () => {
-      const phase = ((logicalPosition % projects.length) + projects.length) % projects.length
-      const physicalPosition = centerStep + phase
-      scrollOffset.current = logicalPosition - physicalPosition
-      rebase(physicalPosition)
-      scheduleUpdate()
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onReturnRef.current()
-    }
-    const drag = wheel.current && vinyl.current ? createWheelDrag(wheel.current, vinyl.current, {
-      enabled: () => !enteringRef.current,
-      position: () => (window.scrollY - scrollOrigin()) / stepHeight() + scrollOffset.current,
-      start: () => {
-        setDragging(true)
-        settling = null
-        window.clearTimeout(settleTimer)
-        root.classList.add('projects-dragging')
-        window.scrollTo({ top: window.scrollY, behavior: 'instant' })
-      },
-      move: position => {
-        window.scrollTo({ top: scrollOrigin() + (position - scrollOffset.current) * stepHeight(), behavior: 'instant' })
-        updateProgress()
-      },
-      end: position => {
-        setDragging(false)
-        if (enteringRef.current) {
-          settling = null
-          root.classList.remove('projects-dragging')
-          return
-        }
-        settling = Math.round(position)
-        window.scrollTo({ top: scrollOrigin() + (settling - scrollOffset.current) * stepHeight(), behavior: preference.matches ? 'instant' : 'smooth' })
-        scheduleUpdate()
-        window.clearTimeout(settleTimer)
-        settleTimer = window.setTimeout(() => {
-          settling = null
-          root.classList.remove('projects-dragging')
-        }, 1000)
-      },
-    }) : null
-    wheelDrag.current = drag
-    scrollOffset.current = -centerStep
-    rebase(centerStep)
-    updatePreference()
-    scheduleUpdate()
-    window.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', onResize)
-    window.addEventListener('keydown', onKeyDown)
-    preference.addEventListener('change', updatePreference)
-    return () => {
-      wheelDrag.current = null
-      drag?.dispose()
-      window.clearTimeout(settleTimer)
-      cancelAnimationFrame(frame)
-      cancelAnimationFrame(releaseFrame)
-      root.classList.remove('projects-rebasing')
-      root.classList.remove('projects-dragging')
-      window.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('keydown', onKeyDown)
-      preference.removeEventListener('change', updatePreference)
-    }
-  }, [])
-
-  useEffect(() => {
     if (!entering) heading.current?.focus({ preventScroll: true })
   }, [entering])
-
-  function selectProject(step: number) {
-    if (!scroller.current || !stage.current || !header.current) return
-    const top = window.scrollY + scroller.current.getBoundingClientRect().top - header.current.offsetHeight
-    const height = (scroller.current.offsetHeight - stage.current.offsetHeight) / loopSteps
-    window.scrollTo({ top: top + (step - scrollOffset.current) * height, behavior: reducedMotion ? 'instant' : 'smooth' })
-  }
 
   const metadata = [
     { title: '타입', values: active.type },
@@ -200,11 +69,27 @@ export default function ProjectsPage({ onReturn, recordImage, entering = false }
     { title: '프레임워크 / 라이브러리', values: active.frameworks },
     { title: '도구 / 환경', values: active.tools },
   ]
-  const position = reducedMotion && !dragging ? selectedStep : progress
   const slots = Array.from({ length: 5 }, (_, i) => Math.floor(position) + i - 2)
 
   return (
-    <main className="projects-page" style={{ '--project-accent': active.color } as CSSProperties} aria-label="프로젝트 컬렉션">
+    <main className="projects-page" style={{ '--project-accent': active.color } as CSSProperties} aria-label="프로젝트 컬렉션"
+      onPointerDownCapture={event => {
+        if (event.isPrimary && event.button === 0) pointerGesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false }
+      }}
+      onPointerMoveCapture={trackPointerMovement}
+      onPointerUpCapture={trackPointerMovement}
+      onPointerCancelCapture={() => { if (pointerGesture.current) pointerGesture.current.moved = true }}
+      onClickCapture={event => {
+        // A drag or swipe must not become a card selection or background click.
+        if (event.detail > 0 && pointerGesture.current?.moved) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+      }}
+      onClick={event => {
+        if (entering || !(event.target instanceof Element)) return
+        if (!event.target.closest('.project-vinyl, .project-card, .project-details, .projects-header')) onReturn()
+      }}>
       <header className="projects-header" ref={header}>
         <button className="projects-back" onClick={onReturn} title="책상으로 돌아가기 (Esc)"><Arrow /><span>책상으로 돌아가기</span></button>
         <span className="projects-header__title">프로젝트</span>
@@ -214,14 +99,15 @@ export default function ProjectsPage({ onReturn, recordImage, entering = false }
         {Array.from({ length: loopSteps + 1 }, (_, index) => <div key={index} className="project-scroll-stop" style={{ top: `${index * 90}svh` }} aria-hidden="true" />)}
         <div className="projects-stage" ref={stage}>
           <aside className="project-library" aria-label="프로젝트 선택">
-            <div className="project-wheel" ref={wheel} title="레코드를 잡아 돌려 프로젝트를 바꿔보세요">
-              <div ref={vinyl} className={`project-vinyl${recordImage ? ' project-vinyl--from-desk' : ''}`} aria-hidden="true" style={{ transform: `translate(-50%, -50%) rotate(${-position * 48}deg)` }}>
+            <div className="project-wheel" ref={wheel}>
+              <div ref={vinyl} className={`project-vinyl${recordImage ? ' project-vinyl--from-desk' : ''}`} aria-hidden="true" style={{ transform: `translate(-50%, -50%) rotate(${-position * projectStepAngle}deg)` }}>
                 {recordImage ? <img className="project-vinyl__image" src={recordImage} alt="" draggable={false} /> : <span className="project-vinyl__label" />}
+                <span className="project-vinyl__surface" title="레코드를 잡아 돌려 프로젝트를 바꿔보세요" />
               </div>
               {slots.map(slot => {
                 const project = projects[projectIndex(slot)]
                 const offset = slot - position
-                const angle = Math.max(-110, Math.min(110, offset * 48))
+                const angle = Math.max(-110, Math.min(110, offset * projectStepAngle))
                 const radians = angle * Math.PI / 180
                 const distance = Math.abs(offset)
                 const hidden = distance > 1.8

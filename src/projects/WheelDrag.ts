@@ -1,3 +1,5 @@
+import { projectStepRadians } from './wheelGeometry'
+
 interface WheelDragOptions {
   enabled: () => boolean
   position: () => number
@@ -48,7 +50,7 @@ export function createWheelDrag(wheel: HTMLElement, record: HTMLElement, options
     // Unwrap each movement so crossing the angle boundary keeps the same direction.
     const delta = Math.atan2(Math.sin(angle - pointer.angle), Math.cos(angle - pointer.angle))
     pointer.angle = angle
-    pointer.position -= delta / (48 * Math.PI / 180)
+    pointer.position -= delta / projectStepRadians
     options.move(pointer.position)
   }
   const up = (event: PointerEvent) => {
@@ -61,8 +63,7 @@ export function createWheelDrag(wheel: HTMLElement, record: HTMLElement, options
   }
   const reset = () => finish(true)
   const lostCapture = (event: PointerEvent) => {
-    // Touch begins with implicit capture on a card; transferring it to the
-    // wheel also emits a bubbling loss event from that card.
+    // Ignore the surface's implicit touch capture when it moves to the wheel.
     if (event.target === wheel) cancel(event)
   }
   const click = (event: MouseEvent) => {
@@ -74,7 +75,7 @@ export function createWheelDrag(wheel: HTMLElement, record: HTMLElement, options
   const preventNativeDrag = (event: DragEvent) => event.preventDefault()
   const preventWheel = (event: WheelEvent) => { if (pointer?.active) event.preventDefault() }
 
-  wheel.addEventListener('pointerdown', down)
+  record.addEventListener('pointerdown', down)
   wheel.addEventListener('pointermove', move)
   wheel.addEventListener('pointerup', up)
   wheel.addEventListener('pointercancel', cancel)
@@ -96,7 +97,7 @@ export function createWheelDrag(wheel: HTMLElement, record: HTMLElement, options
       if (id !== undefined && wheel.hasPointerCapture(id)) wheel.releasePointerCapture(id)
       delete wheel.dataset.dragging
       window.clearTimeout(clickTimer)
-      wheel.removeEventListener('pointerdown', down)
+      record.removeEventListener('pointerdown', down)
       wheel.removeEventListener('pointermove', move)
       wheel.removeEventListener('pointerup', up)
       wheel.removeEventListener('pointercancel', cancel)

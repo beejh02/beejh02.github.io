@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { collectMaterials, createModelResources } from './Resources'
 
 export interface VinylRecord {
   group: THREE.Group
@@ -15,23 +16,12 @@ export function createVinylRecord(): VinylRecord {
   const group = new THREE.Group()
   const surface = new THREE.Group()
   group.add(surface)
-  const textures: THREE.CanvasTexture[] = []
+  const resources = createModelResources({ errorMessage: 'A 2D canvas is required to create the record.', anisotropy: 4 })
+  const { texture } = resources
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>[] = []
 
-  function texture(size: number, paint: (context: CanvasRenderingContext2D) => void) {
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = size
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('A 2D canvas is required to create the record.')
-    paint(context)
-    const result = new THREE.CanvasTexture(canvas)
-    result.colorSpace = THREE.SRGBColorSpace
-    result.anisotropy = 4
-    textures.push(result)
-    return result
-  }
 
-  const vinyl = texture(1024, context => {
+  const vinyl = texture(1024, 1024, context => {
     const pixels = context.createImageData(1024, 1024)
     for (let y = 0; y < 1024; y++) {
       for (let x = 0; x < 1024; x++) {
@@ -61,7 +51,7 @@ export function createVinylRecord(): VinylRecord {
     }
   })
 
-  const label = texture(512, context => {
+  const label = texture(512, 512, context => {
     context.fillStyle = '#a65340'
     context.fillRect(0, 0, 512, 512)
     context.strokeStyle = 'rgba(249, 240, 222, 0.65)'
@@ -114,7 +104,7 @@ export function createVinylRecord(): VinylRecord {
     7.6,
   )
 
-  const shadow = texture(128, context => {
+  const shadow = texture(128, 128, context => {
     const gradient = context.createRadialGradient(64, 64, 46, 64, 64, 64)
     gradient.addColorStop(0, 'rgba(62,48,30,0.28)')
     gradient.addColorStop(0.8, 'rgba(62,48,30,0.18)')
@@ -131,7 +121,7 @@ export function createVinylRecord(): VinylRecord {
   contact.position.x = 10
   contact.position.y = -12
   group.add(contact)
-  const litMaterials = meshes.flatMap(mesh => Array.isArray(mesh.material) ? mesh.material : [mesh.material])
+  const litMaterials = [...collectMaterials(meshes)]
     .filter((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial)
   litMaterials.forEach(material => {
     material.emissive.set('#ffcd7b')
@@ -151,12 +141,7 @@ export function createVinylRecord(): VinylRecord {
     },
     dispose() {
       group.removeFromParent()
-      for (const mesh of meshes) {
-        mesh.geometry.dispose()
-        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-        materials.forEach(material => material.dispose())
-      }
-      textures.forEach(map => map.dispose())
+      resources.dispose(meshes)
     },
   }
 }

@@ -3,7 +3,7 @@ import type { RefObject } from 'react'
 import { createStudyScene } from './study/scene'
 import type { StudyScene, BookState, RecordVisual } from './study/scene'
 
-export default function Desk({ onOpenProjects, active = true, recordInTransit = false, sceneRef }: { onOpenProjects: (record: RecordVisual | null) => Promise<void>; active?: boolean; recordInTransit?: boolean; sceneRef?: RefObject<StudyScene | null> }) {
+export default function Desk({ onOpenProjects, active = true, backgroundOnly = false, recordInTransit = false, sceneRef }: { onOpenProjects: (record: RecordVisual | null) => Promise<void>; active?: boolean; backgroundOnly?: boolean; recordInTransit?: boolean; sceneRef?: RefObject<StudyScene | null> }) {
   const host = useRef<HTMLDivElement>(null)
   const recordEntry = useRef<HTMLButtonElement>(null)
   const localScene = useRef<StudyScene | null>(null)
@@ -35,6 +35,10 @@ export default function Desk({ onOpenProjects, active = true, recordInTransit = 
   useEffect(() => {
     scene.current?.showRecord(!recordInTransit)
   }, [recordInTransit, scene])
+
+  useEffect(() => {
+    scene.current?.setBackgroundOnly(backgroundOnly)
+  }, [backgroundOnly, scene])
 
   async function openProjects() {
     if (openingProjects) return

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { collectMaterials, createModelResources } from './Resources'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 
 export interface Eraser {
@@ -16,7 +17,8 @@ export function createEraser(): Eraser {
   body.rotation.z = THREE.MathUtils.degToRad(-8)
   group.add(body)
   const meshes: THREE.Mesh[] = []
-  const textures: THREE.CanvasTexture[] = []
+  const resources = createModelResources({ errorMessage: 'A 2D canvas is required to create the eraser.', anisotropy: 8 })
+  const { texture } = resources
 
   function add(geometry: THREE.BufferGeometry, material: THREE.Material, x: number, z: number) {
     const mesh = new THREE.Mesh(geometry, material)
@@ -28,19 +30,6 @@ export function createEraser(): Eraser {
     return mesh
   }
 
-  function texture(width: number, height: number, paint: (context: CanvasRenderingContext2D) => void) {
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('A 2D canvas is required to create the eraser.')
-    paint(context)
-    const map = new THREE.CanvasTexture(canvas)
-    map.colorSpace = THREE.SRGBColorSpace
-    map.anisotropy = 8
-    textures.push(map)
-    return map
-  }
 
   const rubber = new THREE.MeshStandardMaterial({ color: '#e5e1d3', roughness: 0.98 })
   add(new RoundedBoxGeometry(800, 350, 140, 3, 22), rubber, 0, 72)
@@ -84,7 +73,7 @@ export function createEraser(): Eraser {
   shadow.rotation.z = body.rotation.z
   group.add(shadow)
 
-  const materials = new Set(meshes.flatMap(mesh => Array.isArray(mesh.material) ? mesh.material : [mesh.material]))
+  const materials = collectMaterials(meshes)
   const litMaterials = [...materials].filter((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial)
   litMaterials.forEach(material => {
     material.emissive.set('#ffcd7b')
@@ -102,11 +91,7 @@ export function createEraser(): Eraser {
     },
     dispose() {
       group.removeFromParent()
-      meshes.forEach(mesh => mesh.geometry.dispose())
-      materials.forEach(material => material.dispose())
-      shadow.geometry.dispose()
-      shadow.material.dispose()
-      textures.forEach(map => map.dispose())
+      resources.dispose([...meshes, shadow])
     },
   }
 }

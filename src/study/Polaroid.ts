@@ -1,20 +1,25 @@
 import * as THREE from 'three'
+import { collectMaterials, createModelResources } from './Resources'
+
+export const polaroidPrint = { width: 724, height: 798, scale: 0.93, travel: 810, exitY: -423, elevation: 54, hoverLift: 40 }
 
 export interface Polaroid {
   group: THREE.Group
   body: THREE.Group
   meshes: THREE.Mesh[]
+  printMeshes: THREE.Mesh[]
+  setPrintProjection: (project: () => void) => void
   setHover: (amount: number) => void
   dispose: () => void
 }
 
 /** A slim instant camera lying on its back, with the lens facing up. */
-export function createPolaroid(): Polaroid {
+export function createPolaroid(onPhotoLoaded: () => void = () => {}): Polaroid {
   const group = new THREE.Group()
   const body = new THREE.Group()
   group.add(body)
   const meshes: THREE.Mesh<THREE.BufferGeometry, THREE.Material>[] = []
-  const textures: THREE.CanvasTexture[] = []
+  const resources = createModelResources({ errorMessage: 'A 2D canvas is required to create the camera label.' })
   const ivory = new THREE.MeshStandardMaterial({ color: '#d8dbd1', roughness: 0.78 })
   const black = new THREE.MeshStandardMaterial({ color: '#1c282b', roughness: 0.63 })
   const rubber = new THREE.MeshStandardMaterial({ color: '#141716', roughness: 0.88 })
@@ -118,22 +123,16 @@ export function createPolaroid(): Polaroid {
     const stripe = new THREE.MeshStandardMaterial({ color, roughness: 0.6 })
     box(19, 205, 1.2, stripe, -38 + index * 19, -255, 1, panel)
   }
-  roundedPlate(610, 10, 2, 4, rubber, 0, -423, 55)
+  roundedPlate(730, 10, 2, 4, rubber, 0, -423, 55)
 
   function label(text: string, width: number, height: number, x: number, y: number, z: number, color: string, weight = 500) {
-    const canvas = document.createElement('canvas')
-    canvas.width = 512
-    canvas.height = Math.round(512 * height / width)
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('A 2D canvas is required to create the camera label.')
-    context.fillStyle = color
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.font = `${weight} ${canvas.height * 0.76}px "Noto Sans KR", Arial, sans-serif`
-    context.fillText(text, 256, canvas.height / 2)
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    textures.push(texture)
+    const texture = resources.texture(512, Math.round(512 * height / width), (context, _width, height) => {
+      context.fillStyle = color
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      context.font = `${weight} ${height * 0.76}px "Noto Sans KR", Arial, sans-serif`
+      context.fillText(text, 256, height / 2)
+    })
     const mesh = add(new THREE.PlaneGeometry(width, height), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false }), x, y, z, panel)
     mesh.castShadow = false
   }
@@ -142,24 +141,64 @@ export function createPolaroid(): Polaroid {
   label('MY STORIES', 135, 17, 213, -298, 2, '#737b70')
   label('INSTANT / 03', 210, 21, -125, -392, 10, '#9aaba6')
 
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 288
-  const context = canvas.getContext('2d')
-  if (!context) throw new Error('A 2D canvas is required to create the camera shadow.')
-  context.shadowColor = 'rgba(15,9,4,0.30)'
-  context.shadowBlur = 12
-  context.fillStyle = 'rgba(15,9,4,0.16)'
-  context.beginPath()
-  context.roundRect(25, 25, 206, 238, 12)
-  context.fill()
-  const shadow = new THREE.CanvasTexture(canvas)
-  textures.push(shadow)
+  // The paper starts inside the opaque body and slides beneath the film exit.
+  // Keep it out of `meshes` so hovering the print does not hold the camera open.
+  const print = new THREE.Group()
+  const printScale = polaroidPrint.scale
+  print.scale.set(printScale, printScale, 1)
+  body.add(print)
+  let hoverAmount = 0
+  let projectPrint: (() => void) | null = null
+  function updatePrint() {
+    print.position.y = polaroidPrint.exitY - polaroidPrint.travel * printScale * THREE.MathUtils.smoothstep(hoverAmount, 0, 1)
+    print.visible = hoverAmount > 0
+    projectPrint?.()
+  }
+  const printPaper = new THREE.Mesh(
+    new THREE.BoxGeometry(polaroidPrint.width, polaroidPrint.height, 3),
+    new THREE.MeshStandardMaterial({ color: '#f4efdf', roughness: 0.94 }),
+  )
+  printPaper.position.set(0, polaroidPrint.height / 2, polaroidPrint.elevation)
+  printPaper.castShadow = true
+  printPaper.receiveShadow = true
+  print.add(printPaper)
+
+  const photoTexture = resources.texture(768, 768, context => {
+    context.fillStyle = '#718372'
+    context.fillRect(0, 0, 768, 768)
+  })
+  const printPhoto = new THREE.Mesh(
+    new THREE.PlaneGeometry(640, 640),
+    new THREE.MeshStandardMaterial({ map: photoTexture, roughness: 0.78, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
+  )
+  printPhoto.position.set(0, 438, 58)
+  printPhoto.receiveShadow = true
+  print.add(printPhoto)
+
+  updatePrint()
+  const printMeshes = [printPaper, printPhoto]
+  const photoImage = new Image()
+  photoImage.onload = () => {
+    const photoCanvas = photoTexture.image as HTMLCanvasElement
+    photoCanvas.getContext('2d')!.drawImage(photoImage, 0, 0, photoCanvas.width, photoCanvas.height)
+    photoTexture.needsUpdate = true
+    onPhotoLoaded()
+  }
+  photoImage.src = `${import.meta.env.BASE_URL}images/polaroid-lake.jpg`
+
+  const shadow = resources.texture(256, 288, context => {
+    context.shadowColor = 'rgba(15,9,4,0.30)'
+    context.shadowBlur = 12
+    context.fillStyle = 'rgba(15,9,4,0.16)'
+    context.beginPath()
+    context.roundRect(25, 25, 206, 238, 12)
+    context.fill()
+  }, { colorSpace: THREE.NoColorSpace, errorMessage: 'A 2D canvas is required to create the camera shadow.' })
   const shadowMaterial = new THREE.MeshBasicMaterial({ map: shadow, transparent: true, depthWrite: false, toneMapped: false })
   const contact = new THREE.Mesh(new THREE.PlaneGeometry(970, 1080), shadowMaterial)
   contact.position.set(12, -15, 0.3)
   group.add(contact)
-  const materials = new Set([...meshes.map(mesh => mesh.material), shadowMaterial])
+  const materials = collectMaterials([...meshes, contact])
   const litMaterials = [...materials].filter((material): material is THREE.MeshStandardMaterial => material instanceof THREE.MeshStandardMaterial)
   litMaterials.forEach(material => {
     material.emissive.set('#ffcd7b')
@@ -167,21 +206,25 @@ export function createPolaroid(): Polaroid {
   })
 
   return {
-    group, body, meshes,
+    group, body, meshes, printMeshes,
+    setPrintProjection(project) {
+      projectPrint = project
+      updatePrint()
+    },
     setHover(amount) {
-      body.position.z = amount * 40
+      body.position.z = amount * polaroidPrint.hoverLift
+      hoverAmount = amount
+      updatePrint()
       litMaterials.forEach(material => { material.emissiveIntensity = amount * 0.012 })
       contact.position.set(12 + amount * 16, -15 - amount * 20, 0.3)
       contact.scale.setScalar(1 + amount * 0.08)
       shadowMaterial.opacity = 1 - amount * 0.35
     },
     dispose() {
+      projectPrint = null
+      photoImage.onload = null
       group.removeFromParent()
-      for (const mesh of [...meshes, contact]) {
-        mesh.geometry.dispose()
-      }
-      materials.forEach(material => material.dispose())
-      textures.forEach(texture => texture.dispose())
+      resources.dispose([...meshes, ...printMeshes, contact])
     },
   }
 }

@@ -20,11 +20,13 @@ button:focus-visible { outline: 2px solid #556849; outline-offset: 5px; }
 .record-entry:disabled { pointer-events: none; }
 .study__outlines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .study__outline { fill: none; stroke: #ffdfa2; stroke-width: 1; stroke-linejoin: round; opacity: 0; filter: drop-shadow(0 0 2px #ffd18d99) drop-shadow(0 0 5px #ffc97e44); }
+.study__outline--polaroid { fill: #ffdfa2; stroke: none; filter: var(--polaroid-outline-filter) drop-shadow(0 0 2px #ffd18d99) drop-shadow(0 0 5px #ffc97e44); }
 .page-loading { min-height: 100svh; display: grid; place-items: center; color: #f0e1ca; background: #493024; font-size: 12px; }
 .page-loading--projects { color: #f0e1ca; background: #493024; }
 .record-transition-desk { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
-.record-transition-desk--hidden { visibility: hidden; }
+.record-transition-desk--background .study > :not(.study__scene) { visibility: hidden; }
 .record-transition-desk .study__heading, .record-transition-desk .study__footer { opacity: var(--desk-label-opacity, 1); }
+.project-layer { position: relative; z-index: 50; }
 .record-transition-destination .project-vinyl { visibility: hidden; }
 .record-transition-destination .projects-header, .record-transition-destination .project-library, .record-transition-destination .project-detail-scroll { position: relative; z-index: 50; opacity: var(--record-reveal, 0); }
 .record-transition-destination .projects-header { position: sticky; }

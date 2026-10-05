@@ -6,9 +6,7 @@
   --project-highlight: color-mix(in srgb, var(--project-accent) 65%, #f3dfba);
   --header-height: 64px;
   color: var(--project-ink);
-  background-color: #493024;
-  background-image: radial-gradient(ellipse at 24% 8%, #b5824933, transparent 65%), linear-gradient(110deg, #25171122, transparent 50%, #25171155), repeating-linear-gradient(0deg, #160c0712 0 1px, transparent 1px 7px);
-  background-attachment: fixed;
+  background: transparent;
   font-size: 16px;
   font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif;
 }
@@ -25,9 +23,8 @@
 .project-scroll-stop { position: absolute; width: 1px; height: 1px; pointer-events: none; scroll-snap-align: start; scroll-snap-stop: always; }
 .projects-stage { position: sticky; top: var(--header-height); height: calc(100svh - var(--header-height)); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(24px, 3.5vw, 60px); padding-right: 4%; }
 .project-library { position: relative; min-width: 0; min-height: 0; }
-.project-wheel { touch-action: none; user-select: none; cursor: grab; }
-.project-wheel .project-card { cursor: grab; }
-.project-wheel[data-dragging="true"], .project-wheel[data-dragging="true"] .project-card { cursor: grabbing; }
+.project-wheel { user-select: none; }
+.project-wheel[data-dragging="true"], .project-wheel[data-dragging="true"] .project-vinyl__surface { cursor: grabbing; }
 .project-wheel { --card-size: clamp(260px, 33vw, 440px); --orbit-radius: calc(var(--card-size) * 1.55); --active-center: calc(var(--card-size) * .5); --orbit-center: calc(var(--active-center) - var(--orbit-radius)); position: relative; height: 100%; overflow: hidden; isolation: isolate; }
 .project-vinyl { position: absolute; left: var(--orbit-center); top: 50%; width: calc(var(--orbit-radius) * 2 + var(--card-size) * 1.6); aspect-ratio: 1; border: 3px solid #252522; border-radius: 50%; background: conic-gradient(from 15deg, #191a18 0deg, #30312d 28deg, #191a18 55deg, #131412 110deg, #353631 160deg, #1c1d19 200deg, #121310 265deg, #30312b 305deg, #191a18 360deg); box-shadow: 8px 12px 28px #29271935; will-change: transform; pointer-events: none; }
 .project-vinyl::before { content: ''; position: absolute; inset: 2%; border-radius: 50%; background: repeating-radial-gradient(circle at center, transparent 0 3px, #d6d6be12 3px 4px, #05060480 4px 5px); mask-image: radial-gradient(circle at center, transparent 0 17%, #000 18% 67%, transparent 68%); }
@@ -37,6 +34,7 @@
 .project-vinyl--from-desk { border: 0; background: none; box-shadow: none; }
 .project-vinyl--from-desk::before, .project-vinyl--from-desk::after { content: none; }
 .project-vinyl__image { position: absolute; width: 116%; height: 116%; max-width: none; left: -8%; top: -8%; }
+.project-vinyl__surface { position: absolute; inset: 0; border-radius: 50%; clip-path: circle(50%); pointer-events: auto; touch-action: none; cursor: grab; }
 .project-card { position: absolute; left: var(--active-center); top: 50%; width: var(--card-size); aspect-ratio: 1; padding: 7px; border: 1px solid #dfc59b66; background: #e8dcc5; box-shadow: 0 2px 2px #10090455, 0 16px 32px #10090480; color: #4d483b; cursor: pointer; will-change: transform; }
 .project-card--active { border-color: #efdbb7b3; }
 .project-card:disabled { cursor: default; }
